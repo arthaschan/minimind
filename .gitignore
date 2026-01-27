@@ -1,8 +1,14 @@
 model/__pycache__
-out
+out/
 website/
 docs-minimind/
-/outpth/lora/
-/outpth/
-/dataset/*.jsonl
+outpth/lora/
+outpth/
+dataset/*.jsonl
+checkpoints/*.pth
 
+dataset/__pycache__/__init__.cpython-313.pyc
+trainer/__pycache__/trainer_utils.cpython-313.pyc
+dataset/images/logo.png
+dataset/images/1.png
+dataset/__pycache__/lm_dataset.cpython-313.pyc
