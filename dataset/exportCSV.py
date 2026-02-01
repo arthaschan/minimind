@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # 把 CMExam 里的test_with_annotations.csv 过滤 'Medical Discipline'] == '口腔医学' 的数据
-# 并保存为jsonl 格式
+# 并保存为jsonl 格式，导出为mental.jsonl
 # -*- coding: utf-8 -*-
 """
 Created on Sun Feb  1 16:24:29 2026
