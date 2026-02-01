@@ -5,8 +5,8 @@ from peft import PeftModel
 from typing import Dict, List, Tuple
 
 # ===================== 基础配置 =====================
-MODEL_PATH = "你的基础模型路径"  # 黑盒蒸馏/微调后的模型路径
-LORA_PATH = ""  # 如果用了LoRA微调，填写LoRA权重路径，否则留空
+MODEL_PATH = "./out/full_sft_512.pth"  # 黑盒蒸馏/微调后的模型路径
+LORA_PATH = "./out/lora/lora_huatuo_512.pth"  # 如果用了LoRA微调，填写LoRA权重路径，否则留空
 TEST_DATA_PATH = "dental_choice_questions.json"
 OUTPUT_REPORT_PATH = "dental_model_test_report.json"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -98,16 +98,16 @@ def run_batch_test() -> Dict:
     
     # 3. 遍历测试题目
     for idx, q in enumerate(test_questions):
-        print(f"测试第 {idx+1}/{len(test_questions)} 题（ID：{q['question_id']}）...")
+        print(f"测试第 {idx+1}/{len(test_questions)} 题（ID：{q['Question']}）...")
         
         # 构建Prompt
-        prompt = build_choice_prompt(q["question"], q["options"])
+        prompt = build_choice_prompt(q["Question"], q["Options"])
         
         # 获取模型回答
         model_answer = get_model_answer(model, tokenizer, prompt)
         
         # 验证答案
-        is_correct = model_answer == q["correct_answer"]
+        is_correct = model_answer == q["Answer"]
         if is_correct:
             test_results["correct_count"] += 1
         else:
@@ -159,7 +159,7 @@ def generate_human_report(test_results: Dict):
 问题：{r['question']}
 选项：
 """
-            for opt_letter, opt_content in r["options"].items():
+            for opt_letter, opt_content in r["optioOptionsns"].items():
                 report += f"- {opt_letter}：{opt_content}\n"
             report += f"模型回答：{r['model_answer']}\n"
             report += f"正确答案：{r['correct_answer']}\n\n"

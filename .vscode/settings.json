@@ -1,3 +1,4 @@
 {
-    "git.useEditorAsCommitInput": false
+    "git.useEditorAsCommitInput": false,
+    "aicursor.openaiApiKey": "key_9a41c5550b3ead768f7b96a186063d26df34afb3463e3f3c02263604f435ff3f"
 }
