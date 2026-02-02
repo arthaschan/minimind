@@ -78,8 +78,7 @@ def build_choice_prompt(question: str, options: str | dict) -> str:
             standard_options += f"{opt_letter}：{opt_content}\n"
     
     # 构建最终Prompt，优化引导语（明确支持A-E）
-    prompt = f"""你是专业的牙科咨询机器人，请回答以下选择题，仅需输出正确选项的字母（如A、B、C、D、E），不要输出其他内容，无需额外解释。
-
+    prompt = f"""请回答以下选择题，仅需输出正确选项的字母（如A、B、C、D、E），不要输出其他内容，无需额外解释。
     问题：{question.strip()}
     选项：
     {standard_options.strip()}
@@ -142,19 +141,40 @@ def get_model_answer(model, tokenizer, prompt, config):
     answer_part = response.split("答案：")[-1].strip().upper()
     model_answer = ""
     for char in answer_part:
-        if char in ["A", "B", "C", "D"]:
+        if char in ["A", "B", "C", "D","E"]:
             model_answer = char
             break
     return model_answer if model_answer else "未知"
 
  # ===================== 2. 加载测试数据（适配 jsonl 文件） =====================
-def jsonload(config):
+ # 文件是对话聊天格式
+def batch_extract_qa_from_jsonl(jsonl_path: str, output_path: str = "extracted_qa.jsonl"):
+    """
+    批量处理JSONL文件，提取每一行的question和answer并保存
+    """
+    with open(jsonl_path, "r", encoding="utf-8") as in_f, open(output_path, "w", encoding="utf-8") as out_f:
+        for line_num, line in enumerate(in_f, 1):
+            line = line.strip()
+            if not line:
+                continue
+            qa_result = extract_qa_from_conversation(line)
+            # 保存批量提取结果
+            out_f.write(json.dumps(qa_result, ensure_ascii=False) + "\n")
+    print(f"✅ 批量提取完成，结果保存至：{output_path}")
+
+# 调用批量处理函数
+batch_extract_qa_from_jsonl("./sft_mini_512_with_choice_train.jsonl")
+
+ # ===================== 2. 加载测试数据（适配 jsonl 文件） =====================
+
+ # 文件是cmexam 里的Question。Answer 这种格式
+def jsonload(jsonl_path):
     if not os.path.exists(config["test_data_path"]):
         raise FileNotFoundError(f"测试数据文件不存在：{config['test_data_path']}")
 
     # 初始化测试题目列表
     test_questions = []
-    with open(config["test_data_path"], "r", encoding="utf-8") as f:
+    with open(jsonl_path, "r", encoding="utf-8") as f:
         # 逐行读取 jsonl 文件
         for line_num, line in enumerate(f, 1):
             # 去除行首尾空白字符（空格、换行、制表符等）
@@ -173,7 +193,7 @@ def jsonload(config):
 
     # 验证是否加载到有效数据
     if not test_questions:
-        raise ValueError(f"jsonl 文件中无有效测试数据：{config['test_data_path']}")
+    raise ValueError(f"jsonl 文件中无有效测试数据：{jsonl_path}")
 
     print(f"✅ 测试数据加载完成，共 {len(test_questions)} 道有效题目")
     return test_questions

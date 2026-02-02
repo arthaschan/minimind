@@ -12,7 +12,7 @@ import pandas as pd
 
  
 # 读取CSV文件
-df = pd.read_csv('mental.csv')
+df = pd.read_csv('val.csv')
 
 print('数据基本信息：')
 df.info()
@@ -30,10 +30,11 @@ else:
     print(df.head().to_csv(sep='\t', na_rep='nan')) 
 
 # 过滤出Medical Discipline列为口腔医学的数据
-filtered_df = df[df['Medical Discipline'] == '口腔医学']
+#filtered_df = df[df['Medical Discipline'] == '口腔医学']
 
 # 将结果保存为JSON文件
 
 
-jsonl_path = 'mental.jsonl'
-filtered_df.to_json(jsonl_path, orient='records', lines=True, force_ascii=False)
+jsonl_path = 'medical_val.jsonl'
+#filtered_df.to_json(jsonl_path, orient='records', lines=True, force_ascii=False)
+df.to_json(jsonl_path, orient='records', lines=True, force_ascii=False)

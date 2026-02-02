@@ -27,8 +27,8 @@ def process_single_json(input_file):
         return data_list
 
 # 定义输入文件路径（两个需要合并的文件）和输出文件路径
-input_files = ["output.jsonl", "lora_medical.jsonl"]  # 两个输入完整JSON文件
-output_file_path = "merge.jsonl"
+input_files = ["huatuo.jsonl","./dental/dental_sft_train.jsonl"]  # 两个输入完整JSON文件
+output_file_path = "lora_huatuo_dental_sft_train.jsonl"
 
 # 收集两个文件的所有有效数据
 all_data_items = []
