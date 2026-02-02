@@ -48,43 +48,18 @@ def init_model(args):
     return model.eval().to(args.device), tokenizer
 
 
-def build_choice_prompt(question: str, options: str | dict) -> str:
+def build_choice_prompt(question: str) -> str:
     """
     构建标准化选择题Prompt，兼容dict和字符串格式的选项，支持A-E选项
     :param question: 选择题题干
     :param options: 选项（dict格式：{"A": "xxx"} 或 字符串格式："A xxx\nB xxx"）
     :return: 格式化后的Prompt
     """
-    # 核心：统一将options转为标准的「字母：内容」格式字符串
-    standard_options = ""
-    
-    # 场景1：options是dict（键为A/B/C/D/E，值为选项内容）
-    if isinstance(options, dict):
-        for opt_letter, opt_content in sorted(options.items()):  # sorted保证A-E顺序不乱
-            standard_options += f"{opt_letter}：{opt_content.strip()}\n"
-    
-    # 场景2：options是字符串（如你给出的原始格式）
-    elif isinstance(options, str):
-        # 按行拆分字符串，逐行处理
-        option_lines = options.strip().split("\n")
-        for line in option_lines:
-            line = line.strip()
-            if not line:
-                continue
-            # 提取选项字母（开头第一个字符，如A/B/C/E）
-            opt_letter = line[0].upper()
-            # 提取选项内容（去除字母后的部分，处理空格/顿号）
-            opt_content = line[1:].strip().lstrip("：").lstrip(".").lstrip(" ").strip()
-            standard_options += f"{opt_letter}：{opt_content}\n"
-    
+
     # 构建最终Prompt，优化引导语（明确支持A-E）
     prompt = f"""请回答以下选择题，仅需输出正确选项的字母（如A、B、C、D、E），不要输出其他内容，无需额外解释。
     问题：{question.strip()}
-    选项：
-    {standard_options.strip()}
-
     答案："""
-    
     return prompt.strip()
 
 # ===================== 复用eval_llm_medical.py推理逻辑：获取模型回答 =====================
@@ -156,16 +131,13 @@ def get_model_answer(model, tokenizer, prompt, config):
 
  # 文件是cmexam 里的Question。Answer 这种格式
 def jsonload(jsonl_path):
-    if not os.path.exists(config["test_data_path"]):
-        raise FileNotFoundError(f"测试数据文件不存在：{config['test_data_path']}")
-
+    if not os.path.exists(jsonl_path):
+        raise FileNotFoundError(f"测试数据文件不存在：{jsonl_path}")
     """
     解析conversation格式字符串，提取question和answer
     :param conversation_str: 输入的JSON格式字符串
     :return: 包含question和answer的字典
     """
- 
-
     # 初始化测试题目列表
     test_questions = []
     with open(jsonl_path, "r", encoding="utf-8") as f:
@@ -177,19 +149,13 @@ def jsonload(jsonl_path):
             if not line:
                 continue
             try:
-                # 解析单行 JSON 对象
-              #  question_obj = json.loads(line)
-                # 将解析后的对象加入列表
-              #  test_questions.append(question_obj)
-
                 # 1. 初始化返回结果
                 result = {
                     "question": "",
                     "answer": ""
                 }
                  # 2. 将JSON字符串解析为Python字典
-                conversation_dict = json.loads(conversation_str)
-                
+                conversation_dict = json.loads(line)
                 # 3. 提取conversations列表（容错处理）
                 conversations = conversation_dict.get("conversations", [])
                 if not isinstance(conversations, list):
@@ -208,11 +174,10 @@ def jsonload(jsonl_path):
                         result["question"] = content
                     elif role == "assistant":
                         result["answer"] = content
-
-                    except json.JSONDecodeError as e:
-                        # 捕获单行解析错误，给出友好提示，不中断整体加载
-                        print(f"⚠️  第 {line_num} 行 JSON 格式错误，跳过该行：{e}")
                 test_questions.append(result)
+            except json.JSONDecodeError as e:
+                # 捕获单行解析错误，给出友好提示，不中断整体加载
+                print(f"⚠️  第 {line_num} 行 JSON 格式错误，跳过该行：{e}")
     # 验证是否加载到有效数据
     if not test_questions:
         raise ValueError(f"jsonl 文件中无有效测试数据：{jsonl_path}")
@@ -226,7 +191,7 @@ def run_batch_test(config,args):
     """
     # 1. 加载模型和Tokenizer（复用验证过的逻辑）
     model, tokenizer = init_model(args)   
-    test_questions = jsonload(config)
+    test_questions = jsonload(config["test_data_path"])
     # 3. 初始化测试结果
     test_results = {
         "total_questions": len(test_questions),
@@ -239,13 +204,13 @@ def run_batch_test(config,args):
     # 4. 遍历执行测试
     for idx, q in enumerate(test_questions):
         # 提取题目字段（兼容json字段，提高容错性）
-        q_id = q.get("Question", idx + 1)
-        question = q.get("Question", "")
-        options = q.get("Options", {})
-        correct_answer = q.get("Answer", "").upper()
+        q_id = q.get("question", idx + 1)
+        question = q.get("question", "")
+    
+        correct_answer = q.get("answer", "").upper()
 
         # 跳过无效题目
-        if not question or not options or not correct_answer or correct_answer not in ["A", "B", "C", "D","E"]:
+        if not question or not correct_answer or correct_answer not in ["A", "B", "C", "D","E"]:
             print(f"⚠️  跳过第 {idx+1} 题（ID：{q_id}）：字段缺失或无效")
             test_results["incorrect_count"] += 1
             continue
@@ -254,7 +219,7 @@ def run_batch_test(config,args):
         print(f"📝 测试第 {idx+1}/{len(test_questions)} 题（ID：{q_id}）")
 
         # 5. 构建Prompt并获取模型回答
-        prompt = build_choice_prompt(question, options)
+        prompt = build_choice_prompt(question)
         model_answer = get_model_answer(model, tokenizer, prompt, config)
 
         # 6. 统计结果
@@ -268,7 +233,6 @@ def run_batch_test(config,args):
         test_results["detailed_results"].append({
             "question_id": q_id,
             "question": question,
-            "options": options,
             "model_answer": model_answer,
             "correct_answer": correct_answer,
             "is_correct": is_correct,
