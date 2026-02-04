@@ -148,22 +148,9 @@ def get_model_answer(model, tokenizer, prompt, config):
 
  # ===================== 2. 加载测试数据（适配 jsonl 文件） =====================
  # 文件是对话聊天格式
-def batch_extract_qa_from_jsonl(jsonl_path: str, output_path: str = "extracted_qa.jsonl"):
-    """
-    批量处理JSONL文件，提取每一行的question和answer并保存
-    """
-    with open(jsonl_path, "r", encoding="utf-8") as in_f, open(output_path, "w", encoding="utf-8") as out_f:
-        for line_num, line in enumerate(in_f, 1):
-            line = line.strip()
-            if not line:
-                continue
-            qa_result = extract_qa_from_conversation(line)
-            # 保存批量提取结果
-            out_f.write(json.dumps(qa_result, ensure_ascii=False) + "\n")
-    print(f"✅ 批量提取完成，结果保存至：{output_path}")
+ 
 
-# 调用批量处理函数
-batch_extract_qa_from_jsonl("./sft_mini_512_with_choice_train.jsonl")
+ 
 
  # ===================== 2. 加载测试数据（适配 jsonl 文件） =====================
 

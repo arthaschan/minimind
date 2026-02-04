@@ -113,13 +113,14 @@ def get_model_answer(model, tokenizer, prompt, config):
     )
 
     # 4. 提取有效答案（仅保留A/B/C/D）
+    print(f'response = {response}')
     answer_part = response.split("答案：")[-1].strip().upper()
     model_answer = ""
     for char in answer_part:
         if char in ["A", "B", "C", "D","E"]:
             model_answer = char
             break
-    return model_answer if model_answer else "未知"
+    return model_answer if model_answer else answer_part
 
  # ===================== 2. 加载测试数据（适配 jsonl 文件） =====================
  # 文件是对话聊天格式
@@ -273,7 +274,6 @@ def generate_human_report(test_results, config):
     if wrong_questions:
         for r in wrong_questions:
             report += f"""### 题目ID：{r['question_id']}
-问题：{r['question']}
 选项：
 """
 
